@@ -39,7 +39,7 @@ public class ApiExceptionHandler {
     public ResponseEntity<ErrorDetail> handleConflictException(ConflictException ex, WebRequest request) {
         String message = ex.getMessage();
         ErrorDetail errorVm = new ErrorDetail(HttpStatus.CONFLICT.toString(), "Conflict", message);
-        return ResponseEntity.badRequest().body(errorVm);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorVm);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

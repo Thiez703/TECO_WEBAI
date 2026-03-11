@@ -79,7 +79,7 @@ public class AuthService {
 
         // TODO: Gửi email chứa MK tạm qua EmailService
         // emailService.sendTempPassword(newUser.getEmail(), tempPassword);
-        log.info("[DEV] Tài khoản mới: email={} | tempPassword={}", newUser.getEmail(), tempPassword);
+        log.info("[DEV] Tài khoản mới được tạo: email={}", newUser.getEmail());
 
         return mapToUserDetail(newUser);
     }
@@ -139,8 +139,8 @@ public class AuthService {
     @Transactional
     public AuthResponse firstChangePassword(FirstChangePasswordRequest request, Long userId) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", userId));
 
         if (!user.isFirstLogin()) {
             throw new BadRequestException("Tài khoản đã đổi mật khẩu lần đầu");
@@ -240,8 +240,8 @@ public class AuthService {
     @Transactional
     public void changePassword(ChangePasswordRequest request, Long userId) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", userId));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
             throw new BadRequestException("Mật khẩu hiện tại không đúng");
@@ -268,18 +268,27 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public UserDetail getProfile(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", userId));
         return mapToUserDetail(user);
     }
 
     @Transactional
     public UserDetail updateProfile(UpdateProfileRequest request, Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", userId));
 
         // FR-07: chỉ cho sửa phoneNumber và avatarUrl
-        if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getPhoneNumber() != null) {
+            boolean phoneConflict = userRepository
+                    .findByPhoneNumberAndDeletedAtIsNull(request.getPhoneNumber())
+                    .filter(u -> !u.getId().equals(userId))
+                    .isPresent();
+            if (phoneConflict) {
+                throw new ConflictException("PHONE_NUMBER_CONFLICT");
+            }
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
         if (request.getAvatarUrl() != null)   user.setAvatarUrl(request.getAvatarUrl());
 
         userRepository.save(user);

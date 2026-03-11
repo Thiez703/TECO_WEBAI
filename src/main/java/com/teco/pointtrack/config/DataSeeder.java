@@ -91,7 +91,7 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             userRepository.save(admin);
-            log.info("Seeded admin: admin@pointtrack.com / Admin@123");
+            log.info("Seeded admin user: admin@pointtrack.com (check config for credentials)");
         }
     }
 

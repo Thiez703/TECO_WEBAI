@@ -2,12 +2,13 @@ package com.teco.pointtrack.repository;
 
 import com.teco.pointtrack.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
     Optional<User> findByEmail(String email);
 
@@ -18,4 +19,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** FR-04: tìm user theo reset token để đặt lại mật khẩu */
     Optional<User> findByResetPasswordToken(String token);
+
+    /** Chỉ lấy user chưa bị soft delete theo ID */
+    Optional<User> findByIdAndDeletedAtIsNull(Long id);
+
+    /** Tìm user theo số điện thoại, chưa bị soft delete */
+    Optional<User> findByPhoneNumberAndDeletedAtIsNull(String phoneNumber);
 }
